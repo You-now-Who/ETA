@@ -11,7 +11,7 @@ export default function HomePage() {
           Master Your Time Estimation Skills
         </h1>
         <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-          ETA/Verbum helps you get better at predicting how long tasks will take. 
+          ETA helps you get better at predicting how long tasks will take. 
           Make predictions, track actual time, and gradually improve your calibration through feedback.
         </p>
         <div className="flex justify-center space-x-4">
