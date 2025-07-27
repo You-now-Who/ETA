@@ -1,5 +1,7 @@
-# 🕐 ETA: The App That Judges Your Time Estimation Skills Harder Than You Judge Your Life Choices
+# 🕐 ETA - Getting Better at Estimating Time
+![funnimeme](https://i.pinimg.com/474x/cb/fc/2f/cbfc2fa5aa5987ed3742af2e3a73544b.jpg)
 
+---
 <div align="center">
 
 *"It'll only take 5 minutes!" - Famous last words that this app will absolutely destroy*
