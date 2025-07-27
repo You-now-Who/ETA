@@ -18,39 +18,41 @@ export default function DashboardPage() {
     const allPredictions = storageService.getPredictions();
     setPredictions(allPredictions);
     
-    // Filter completed predictions properly
-    const completed = allPredictions.filter(p => p.isCompleted || p.completed);
+    // Filter completed predictions properly - only REAL completed predictions
+    const completed = allPredictions.filter(p => 
+      (p.isCompleted || p.completed) && 
+      !p.id?.startsWith('sample-') // Exclude any sample data that might have been stored
+    );
     setCompletedPredictions(completed);
 
     // Generate calibration analysis
     const analyzer = new CalibrationAnalyzer();
     
-    // Always try to use real data first, supplement with sample data if needed
+    // Use only real data for the main dashboard display
     let dataToAnalyze = [...completed];
     
-    // If we have some real data but not enough, mix real + sample
-    if (completed.length > 0 && completed.length < 3) {
-      console.log(`Using ${completed.length} real predictions + sample data for analysis`);
-      dataToAnalyze = [...completed, ...generateSampleData()];
-      setUseSampleData(true);
-    } 
-    // If no real data, use sample data
-    else if (completed.length === 0) {
-      console.log('No real data, using sample data');
+    // Only use sample data for analysis if we have absolutely no real data
+    if (completed.length === 0) {
+      console.log('No real completed predictions found, using sample data for analysis only');
       dataToAnalyze = generateSampleData();
       setUseSampleData(true);
-    }
-    // If enough real data, use only real data
-    else {
-      console.log(`Using ${completed.length} real predictions for analysis`);
+    } else {
+      console.log(`Using ${completed.length} real completed predictions for analysis`);
       setUseSampleData(false);
+      
+      // If we have some real data but not enough for meaningful analysis,
+      // supplement with sample data for analysis only (not display)
+      if (completed.length < 5) {
+        console.log(`Supplementing ${completed.length} real predictions with sample data for richer analysis`);
+        dataToAnalyze = [...completed, ...generateSampleData()];
+      }
     }
 
     // Ensure all data has the required fields for analysis
     dataToAnalyze.forEach(pred => {
       // Make sure actualTime exists
       if (pred.actualTime && pred.actualTime > 0) {
-        console.log(`Adding prediction: ${pred.taskName}, actual: ${pred.actualTime}min`);
+        console.log(`Adding prediction for analysis: ${pred.taskName}, actual: ${pred.actualTime}min`);
         analyzer.addPrediction(pred, pred.actualTime);
       }
     });
@@ -187,19 +189,40 @@ export default function DashboardPage() {
       <div className="grid lg:grid-cols-2 gap-8 mb-12">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <h3 className="text-xl font-semibold text-gray-900 mb-4">Calibration Curve</h3>
+          {useSampleData && completedPredictions.length === 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <div className="text-sm text-blue-700">📊 Using sample data for demonstration</div>
+            </div>
+          )}
           <CalibrationCurveChart calibrationCurve={calibrationReport?.calibration?.curve} />
         </div>
         
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <h3 className="text-xl font-semibold text-gray-900 mb-4">Predicted vs Actual Time</h3>
-          <PredictionAccuracyChart predictions={completedPredictions.length > 0 ? completedPredictions : generateSampleData()} />
+          {useSampleData && completedPredictions.length === 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <div className="text-sm text-blue-700">📊 Using sample data for demonstration</div>
+            </div>
+          )}
+          <PredictionAccuracyChart predictions={
+            completedPredictions.length > 0 ? completedPredictions : 
+            (useSampleData ? generateSampleData() : [])
+          } />
         </div>
       </div>
 
       {/* Additional Chart */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Estimation Bias Over Time</h3>
-        <BiasOverTimeChart predictions={completedPredictions.length > 0 ? completedPredictions : generateSampleData()} />
+        {useSampleData && completedPredictions.length === 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <div className="text-sm text-blue-700">📊 Using sample data for demonstration</div>
+          </div>
+        )}
+        <BiasOverTimeChart predictions={
+          completedPredictions.length > 0 ? completedPredictions : 
+          (useSampleData ? generateSampleData() : [])
+        } />
       </div>
       <div className="grid lg:grid-cols-2 gap-8 mb-12">
         {/* Calibration Curve */}
@@ -341,10 +364,17 @@ export default function DashboardPage() {
         
         {completedPredictions.length === 0 ? (
           <div className="text-center py-8">
-            <div className="text-gray-500 mb-2">📊 No completed predictions yet</div>
-            <p className="text-sm text-gray-600">
-              Complete some predictions to see your personal calibration analysis here.
+            <div className="text-gray-400 text-4xl mb-4">📊</div>
+            <h4 className="text-lg font-medium text-gray-900 mb-2">No Completed Predictions Yet</h4>
+            <p className="text-gray-600 mb-4">
+              Make some predictions and complete them to see your calibration analysis here.
             </p>
+            <a 
+              href="/"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Make Your First Prediction
+            </a>
           </div>
         ) : (
           <div className="space-y-4">

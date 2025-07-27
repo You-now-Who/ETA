@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useUser } from '@auth0/nextjs-auth0';
 import { storageService } from '@/lib/storage';
 
 function NavItem({ href, children, isActive, count }) {
@@ -36,18 +37,42 @@ export default function Header() {
     completed: 0,
     total: 0
   });
+  const { user, isLoading } = useUser();
+
+  // Profile dropdown state
+  const [showProfile, setShowProfile] = useState(false);
+  const profileRef = useRef(null);
 
   useEffect(() => {
-    const predictions = storageService.getPredictions();
-    const activePredictions = storageService.getActivePredictions();
-    const completedPredictions = storageService.getCompletedPredictions();
-    
-    setTaskCounts({
-      active: activePredictions.length,
-      completed: completedPredictions.length,
-      total: predictions.length
-    });
-  }, [pathname]); // Refresh counts when navigation changes
+    if (user) {
+      const predictions = storageService.getPredictions();
+      const activePredictions = storageService.getActivePredictions();
+      const completedPredictions = storageService.getCompletedPredictions();
+      
+      setTaskCounts({
+        active: activePredictions.length,
+        completed: completedPredictions.length,
+        total: predictions.length
+      });
+    } else {
+      setTaskCounts({ active: 0, completed: 0, total: 0 });
+    }
+  }, [pathname, user]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setShowProfile(false);
+      }
+    }
+    if (showProfile) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfile]);
 
   return (
     <header className="border-b border-gray-200 sticky top-0 z-50 backdrop-blur-sm bg-white/95">
@@ -65,79 +90,123 @@ export default function Header() {
             </span>
           </Link>
           
-          {/* Navigation */}
-          <nav className="flex items-center space-x-1">
-            <NavItem 
-              href="/predict" 
-              isActive={pathname === '/predict'}
-            >
-              📝 Predict
-            </NavItem>
-            
-            <NavItem 
-              href="/log" 
-              isActive={pathname === '/log'}
-              count={taskCounts.active}
-            >
-              ✅ Log Tasks
-            </NavItem>
-            
-            <NavItem 
-              href="/dashboard" 
-              isActive={pathname === '/dashboard'}
-              count={taskCounts.completed}
-            >
-              📊 Dashboard
-            </NavItem>
+          {/* Navigation or Login */}
+          {user ? (
+            <div className="flex items-center justify-between w-full ml-8">
+              {/* Navigation Items - Centered */}
+              <nav className="flex items-center space-x-1 flex-1 justify-center">
+                <NavItem 
+                  href="/predict" 
+                  isActive={pathname === '/predict'}
+                >
+                  📝 Predict
+                </NavItem>
+                
+                <NavItem 
+                  href="/log" 
+                  isActive={pathname === '/log'}
+                  count={taskCounts.active}
+                >
+                  ✅ Log Tasks
+                </NavItem>
+                
+                <NavItem 
+                  href="/dashboard" 
+                  isActive={pathname === '/dashboard'}
+                  count={taskCounts.completed}
+                >
+                  📊 Dashboard
+                </NavItem>
 
-            <NavItem 
-              href="/test" 
-              isActive={pathname === '/test'}
-            >
-              🧪 Test
-            </NavItem>
+                {/* <NavItem 
+                  href="/test" 
+                  isActive={pathname === '/test'}
+                >
+                  🧪 Test
+                </NavItem>
 
-            <NavItem 
-              href="/charts-test" 
-              isActive={pathname === '/charts-test'}
+                <NavItem 
+                  href="/charts-test" 
+                  isActive={pathname === '/charts-test'}
+                >
+                  📊 Charts
+                </NavItem> */}
+              </nav>
+
+              {/* Profile Button - Right End */}
+              <div className="relative" ref={profileRef}>
+                <button
+                  className="flex items-center focus:outline-none"
+                  onClick={() => setShowProfile((v) => !v)}
+                  aria-label="User menu"
+                >
+                  <img
+                    src={user.picture}
+                    alt="Profile"
+                    className="w-9 h-9 rounded-full border-2 border-gray-200 shadow-sm hover:ring-2 hover:ring-gray-400 transition"
+                  />
+                </button>
+                {showProfile && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
+                    <div className="px-4 py-2 text-gray-900 font-medium border-b border-gray-100">
+                      {user.nickname}
+                    </div>
+                    <Link
+                      href="/auth/logout"
+                      className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      Logout
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="px-4 py-2 rounded-lg bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors"
             >
-              📊 Charts
-            </NavItem>
-          </nav>
+              Login
+            </Link>
+          )}
 
           {/* Task Summary (Desktop) */}
-          <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-              <span>{taskCounts.active} Active</span>
+          {/* {user && (
+            <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                <span>{taskCounts.active} Active</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>{taskCounts.completed} Completed</span>
+              </div>
+              <div className="text-gray-400">|</div>
+              <div className="font-medium text-gray-900">
+                {taskCounts.total} Total
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>{taskCounts.completed} Completed</span>
-            </div>
-            <div className="text-gray-400">|</div>
-            <div className="font-medium text-gray-900">
-              {taskCounts.total} Total
-            </div>
-          </div>
+          )} */}
         </div>
 
         {/* Mobile Task Summary */}
-        <div className="md:hidden mt-3 pt-3 border-t border-gray-100">
-          <div className="flex items-center justify-center space-x-6 text-sm text-gray-600">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-              <span>{taskCounts.active} Active</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>{taskCounts.completed} Completed</span>
-            </div>
-            <div className="font-medium text-gray-900">
-              {taskCounts.total} Total
+        {user && (
+          <div className="md:hidden mt-3 pt-3 border-t border-gray-100">
+            <div className="flex items-center justify-center space-x-6 text-sm text-gray-600">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                <span>{taskCounts.active} Active</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>{taskCounts.completed} Completed</span>
+              </div>
+              <div className="font-medium text-gray-900">
+                {taskCounts.total} Total
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </header>
   );

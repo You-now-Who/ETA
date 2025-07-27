@@ -21,9 +21,12 @@ export const storageService = {
   },
 
   savePrediction(prediction: Omit<Prediction, 'id' | 'createdAt' | 'isCompleted'>): Prediction {
+    // Generate more unique ID by combining timestamp with random number
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     const newPrediction: Prediction = {
       ...prediction,
-      id: Date.now().toString(),
+      id: uniqueId,
       createdAt: new Date(),
       isCompleted: false,
     };

@@ -64,13 +64,13 @@ function CompletionModal({ prediction, onClose, onSave }) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-150 transform hover:scale-105 active:scale-95 shadow-sm hover:shadow-md btn-secondary-enhanced btn-ripple"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+              className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all duration-150 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl btn-primary-enhanced btn-ripple"
             >
               Save
             </button>
@@ -175,7 +175,7 @@ export default function LogPage() {
 
                   <button
                     onClick={() => setSelectedPrediction(prediction)}
-                    className="ml-6 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                    className="ml-6 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all duration-150 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl btn-primary-enhanced btn-ripple"
                   >
                     Mark Complete
                   </button>

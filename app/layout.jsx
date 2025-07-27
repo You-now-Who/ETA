@@ -20,6 +20,7 @@ export default function RootLayout({ children }) {
             {/* <Footer /> */}
           </main>
         </Auth0Provider>
+        <script src="/utils/buttonEffects.js"></script>
       </body>
     </html>
   );

@@ -254,10 +254,10 @@ export default function PredictPage() {
                   key={tag}
                   type="button"
                   onClick={() => handleTagToggle(tag)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-150 transform hover:scale-105 active:scale-95 ${
                     formData.tags.includes(tag)
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-gray-900 text-white shadow-md hover:bg-gray-800'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
                   }`}
                 >
                   {tag}
@@ -270,7 +270,7 @@ export default function PredictPage() {
           <div className="pt-6">
             <button
               type="submit"
-              className="w-full bg-gray-900 text-white py-4 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+              className="w-full bg-gray-900 text-white py-4 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-all duration-150 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transform hover:scale-105 active:scale-98 shadow-lg hover:shadow-xl"
             >
               Submit Prediction
             </button>

@@ -10,6 +10,8 @@ export default function TestAnalysisPage() {
     calibrationTest: null,
     dataFlow: null
   });
+  const [sampleData, setSampleData] = useState([]);
+  const [count, setCount] = useState(8);
 
   useEffect(() => {
     runTests();
@@ -25,30 +27,50 @@ export default function TestAnalysisPage() {
 
     // Test 1: Storage Service
     try {
-      // Test creating a prediction
-      const testPrediction = {
-        taskName: "Test Analysis Pipeline",
-        isProject: false,
-        successCriteria: "Verify all components work together",
-        confidence75Min: 30,
-        confidence75Max: 45,
-        confidence95Min: 20,
-        confidence95Max: 60,
-        confidenceLevel: 80,
-        intensity: 5,
-        tags: ['#test', '#analysis']
-      };
-
-      const saved = storageService.savePrediction(testPrediction);
+      // Clear any existing test data first
+      const existingPredictions = storageService.getPredictions();
+      const nonTestPredictions = existingPredictions.filter(pred => 
+        !pred.taskName || !pred.taskName.includes('Test ')
+      );
       
-      // Test completing the prediction
-      storageService.completePrediction(saved.id, {
-        actualTime: 38,
-        reflection: "Test completion worked correctly"
+      // Update localStorage with non-test predictions only
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('time_predictions', JSON.stringify(nonTestPredictions));
+      }
+
+      // Generate random test predictions
+      const randomTestData = generateSampleData(5); // Generate 5 random test predictions
+      
+      let savedCount = 0;
+      let completedCount = 0;
+
+      randomTestData.forEach((testPred, index) => {
+        // Create prediction with test prefix
+        const testPrediction = {
+          taskName: `Test ${testPred.taskName}`,
+          isProject: testPred.isProject,
+          successCriteria: testPred.successCriteria || "Test completion verification",
+          confidence75Min: testPred.confidence75Min,
+          confidence75Max: testPred.confidence75Max,
+          confidence95Min: testPred.confidence95Min,
+          confidence95Max: testPred.confidence95Max,
+          confidenceLevel: testPred.confidenceLevel,
+          intensity: testPred.intensity,
+          tags: [...(testPred.tags || []), '#test', '#pipeline']
+        };
+
+        const saved = storageService.savePrediction(testPrediction);
+        if (saved) savedCount++;
+        
+        // Complete the prediction with the random actual time
+        storageService.completePrediction(saved.id, {
+          actualTime: testPred.actualTime,
+          reflection: `Test completion #${index + 1}: Actual time was ${testPred.actualTime} minutes`
+        });
+        completedCount++;
       });
 
-      const completed = storageService.getCompletedPredictions();
-      results.storageTest = completed.length > 0 ? 'success' : 'failed';
+      results.storageTest = (savedCount === 5 && completedCount === 5) ? 'success' : 'failed';
     } catch (error) {
       console.error('Storage test failed:', error);
       results.storageTest = 'failed';
@@ -57,7 +79,7 @@ export default function TestAnalysisPage() {
     // Test 2: Calibration Analysis
     try {
       const analyzer = new CalibrationAnalyzer();
-      const sampleData = generateSampleData();
+      const sampleData = generateSampleData(15); // Generate more data for better analysis
       
       sampleData.forEach(pred => {
         analyzer.addPrediction(pred, pred.actualTime);
@@ -65,7 +87,7 @@ export default function TestAnalysisPage() {
       
       const report = analyzer.generateCalibrationReport();
       
-      results.calibrationTest = report && report.summary ? 'success' : 'failed';
+      results.calibrationTest = report && report.summary && report.summary.totalPredictions >= 15 ? 'success' : 'failed';
     } catch (error) {
       console.error('Calibration test failed:', error);
       results.calibrationTest = 'failed';
@@ -95,6 +117,15 @@ export default function TestAnalysisPage() {
     }
 
     setTestResults(results);
+    
+    // Also generate new random sample data
+    const newData = generateSampleData(count);
+    setSampleData(newData);
+  };
+
+  const generateNewData = () => {
+    const newData = generateSampleData(count);
+    setSampleData(newData);
   };
 
   const getStatusIcon = (status) => {
@@ -204,17 +235,151 @@ export default function TestAnalysisPage() {
             </div>
           </div>
 
+          {/* Random Data Generation Section */}
+          <div className="mt-12 bg-gray-50 rounded-xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">🎲 Random Sample Data Generator</h2>
+              <div className="flex items-center space-x-4">
+                <label className="text-sm font-medium text-gray-700">
+                  Count:
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={count}
+                    onChange={(e) => setCount(parseInt(e.target.value) || 8)}
+                    className="ml-2 px-3 py-1 border border-gray-300 rounded-lg w-20"
+                  />
+                </label>
+                <button
+                  onClick={generateNewData}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-150 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl btn-ripple"
+                >
+                  Generate New Data
+                </button>
+              </div>
+            </div>
+
+            {sampleData.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Generated {sampleData.length} Random Predictions
+                </h3>
+                
+                <div className="grid gap-4 max-h-96 overflow-y-auto">
+                  {sampleData.map((pred, index) => {
+                    const isWithin75 = pred.actualTime >= pred.confidence75Min && pred.actualTime <= pred.confidence75Max;
+                    const isWithin95 = pred.actualTime >= pred.confidence95Min && pred.actualTime <= pred.confidence95Max;
+                    const isOver = pred.actualTime > pred.confidence95Max;
+                    const isUnder = pred.actualTime < pred.confidence95Min;
+                    
+                    return (
+                      <div key={pred.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-semibold text-gray-900">{pred.taskName}</h4>
+                          <div className="flex space-x-2">
+                            {isWithin75 && (
+                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                                ✓ 75%
+                              </span>
+                            )}
+                            {isWithin95 && !isWithin75 && (
+                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                                ✓ 95%
+                              </span>
+                            )}
+                            {isOver && (
+                              <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">
+                                Overran
+                              </span>
+                            )}
+                            {isUnder && (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                                Under
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-600">75% Range: </span>
+                            <span className="font-medium">
+                              {pred.confidence75Min}-{pred.confidence75Max}min
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">95% Range: </span>
+                            <span className="font-medium">
+                              {pred.confidence95Min}-{pred.confidence95Max}min
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Actual: </span>
+                            <span className={`font-medium ${
+                              isWithin75 ? 'text-green-600' :
+                              isWithin95 ? 'text-yellow-600' :
+                              'text-red-600'
+                            }`}>
+                              {pred.actualTime}min
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Days ago: </span>
+                            <span className="font-medium">
+                              {Math.ceil((new Date() - new Date(pred.completedAt)) / (1000 * 60 * 60 * 24))}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Summary Stats */}
+                <div className="mt-6 grid grid-cols-3 gap-4">
+                  <div className="bg-green-50 rounded-lg p-4 text-center">
+                    <div className="text-xl font-bold text-green-900">
+                      {((sampleData.filter(p => p.actualTime >= p.confidence75Min && p.actualTime <= p.confidence75Max).length / sampleData.length) * 100).toFixed(1)}%
+                    </div>
+                    <div className="text-green-700 text-sm">75% Accuracy</div>
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-4 text-center">
+                    <div className="text-xl font-bold text-blue-900">
+                      {((sampleData.filter(p => p.actualTime >= p.confidence95Min && p.actualTime <= p.confidence95Max).length / sampleData.length) * 100).toFixed(1)}%
+                    </div>
+                    <div className="text-blue-700 text-sm">95% Accuracy</div>
+                  </div>
+                  <div className="bg-orange-50 rounded-lg p-4 text-center">
+                    <div className="text-xl font-bold text-orange-900">
+                      {((sampleData.filter(p => p.actualTime > p.confidence95Max).length / sampleData.length) * 100).toFixed(1)}%
+                    </div>
+                    <div className="text-orange-700 text-sm">Overran Rate</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {sampleData.length === 0 && (
+              <div className="text-center py-8">
+                <div className="text-gray-400 text-4xl mb-3">🎲</div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Generate Random Data</h3>
+                <p className="text-gray-600 mb-4">Click "Generate New Data" to see realistic, random time estimation data with human biases.</p>
+              </div>
+            )}
+          </div>
+
           {/* Actions */}
           <div className="flex space-x-4 pt-4">
             <button
               onClick={runTests}
-              className="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+              className="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all duration-150 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl btn-ripple"
             >
               Run Tests Again
             </button>
             <a
               href="/predict"
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-150 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl btn-ripple inline-block text-center"
             >
               Create Real Prediction
             </a>
