@@ -15,7 +15,7 @@ export async function GET(request, { params }) {
     const clientId = process.env.AUTH0_M2M_CLIENT_ID;
     const clientSecret = process.env.AUTH0_M2M_CLIENT_SECRET;
 
-    console.log('Domain:', domain); s
+    console.log('Domain:', domain);
     console.log('Client ID exists:', !!clientId);
     console.log('Client Secret exists:', !!clientSecret);
 
