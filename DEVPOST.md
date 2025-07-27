@@ -1,3 +1,5 @@
+![meme](https://logmyhours.com/blog/wp-content/uploads/2019/04/6.jpg)
+
 ### For a breakdown of how I implemented Auth0, please scroll down 👇
 
 ## ✨ Inspiration:
