@@ -98,4 +98,4 @@ console.log('\nThe analysis pipeline is ready to use. Key features:');
 console.log('- Research-based calibration metrics (Brier Score, Murphy\'s Decomposition)');
 console.log('- Overconfidence and planning fallacy detection');
 console.log('- Personalized recommendations for improvement');
-console.log('- Compatible with the TimeCalibr dashboard');
+console.log('- Compatible with the ETA dashboard');

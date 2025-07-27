@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-console.log('🚀 TimeCalibr Progressive Profiling Setup Guide\n');
+console.log('🚀 ETA Progressive Profiling Setup Guide\n');
 
 console.log('📋 Follow these steps to set up progressive profiling:\n');
 
 console.log('1️⃣  AUTH0 MANAGEMENT API SETUP');
 console.log('   • Go to: https://manage.auth0.com/dashboard/applications');
 console.log('   • Click "Create Application"');
-console.log('   • Name: "TimeCalibr Management API"');
+console.log('   • Name: "ETA Management API"');
 console.log('   • Type: "Machine to Machine Applications"');
 console.log('   • Click "Create"');
 console.log('   • Select "Auth0 Management API"');

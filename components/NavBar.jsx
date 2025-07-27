@@ -86,7 +86,7 @@ export default function Header() {
               </svg>
             </div>
             <span className="text-2xl font-bold text-gray-900 group-hover:text-gray-700 transition-colors">
-              TimeCalibr
+              ETA
             </span>
           </Link>
           
