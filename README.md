@@ -1,4 +1,7 @@
 # 🕐 ETA - Getting Better at Estimating Time
+
+### Please find my devpost write up at DEVPOST.md and my screeshots are in /screenshots
+
 ![funnimeme](https://i.pinimg.com/474x/cb/fc/2f/cbfc2fa5aa5987ed3742af2e3a73544b.jpg)
 
 ---
