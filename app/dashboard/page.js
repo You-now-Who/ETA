@@ -1,10 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { storageService } from '@/lib/storage';
 import { CalibrationAnalyzer, generateSampleData } from '@/lib/calibration';
+import { CalibrationCurveChart, PredictionAccuracyChart, BiasOverTimeChart } from '@/components/CalibrationCharts';
+import { ActionableInsights } from '@/components/ActionableInsights';
 
 export default function DashboardPage() {
+  const pathname = usePathname();
   const [predictions, setPredictions] = useState([]);
   const [completedPredictions, setCompletedPredictions] = useState([]);
   const [calibrationReport, setCalibrationReport] = useState(null);
@@ -14,25 +18,47 @@ export default function DashboardPage() {
     const allPredictions = storageService.getPredictions();
     setPredictions(allPredictions);
     
-    const completed = allPredictions.filter(p => p.completed);
+    // Filter completed predictions properly
+    const completed = allPredictions.filter(p => p.isCompleted || p.completed);
     setCompletedPredictions(completed);
 
     // Generate calibration analysis
     const analyzer = new CalibrationAnalyzer();
     
-    // Use sample data if no real data exists
-    const dataToAnalyze = completed.length >= 3 ? completed : generateSampleData();
-    if (completed.length < 3) {
+    // Always try to use real data first, supplement with sample data if needed
+    let dataToAnalyze = [...completed];
+    
+    // If we have some real data but not enough, mix real + sample
+    if (completed.length > 0 && completed.length < 3) {
+      console.log(`Using ${completed.length} real predictions + sample data for analysis`);
+      dataToAnalyze = [...completed, ...generateSampleData()];
+      setUseSampleData(true);
+    } 
+    // If no real data, use sample data
+    else if (completed.length === 0) {
+      console.log('No real data, using sample data');
+      dataToAnalyze = generateSampleData();
       setUseSampleData(true);
     }
+    // If enough real data, use only real data
+    else {
+      console.log(`Using ${completed.length} real predictions for analysis`);
+      setUseSampleData(false);
+    }
 
+    // Ensure all data has the required fields for analysis
     dataToAnalyze.forEach(pred => {
-      analyzer.addPrediction(pred, pred.actualTime);
+      // Make sure actualTime exists
+      if (pred.actualTime && pred.actualTime > 0) {
+        console.log(`Adding prediction: ${pred.taskName}, actual: ${pred.actualTime}min`);
+        analyzer.addPrediction(pred, pred.actualTime);
+      }
     });
 
     const report = analyzer.generateCalibrationReport();
+    console.log('Generated calibration report:', report);
     setCalibrationReport(report);
-  }, []);
+  }, [pathname]); // Refresh when returning to dashboard
 
   const calculateAccuracy = (confidenceLevel) => {
     if (completedPredictions.length === 0) return 0;
@@ -84,13 +110,21 @@ export default function DashboardPage() {
     <div className="max-w-6xl mx-auto px-6 py-12">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Calibration Dashboard</h1>
-        {useSampleData && (
-          <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm border border-blue-200">
-            📊 Showing sample data for demonstration
+        <div className="flex items-center space-x-4">
+          {useSampleData && (
+            <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm border border-blue-200">
+              📊 {completedPredictions.length > 0 ? 'Mixed real + sample data' : 'Sample data only'}
+            </div>
+          )}
+          <div className="text-sm text-gray-600">
+            Real completed: {completedPredictions.length}
           </div>
-        )}
+        </div>
       </div>
       
+      {/* Actionable Insights */}
+      <ActionableInsights calibrationReport={calibrationReport} />
+
       {/* Stats Overview */}
       <div className="grid md:grid-cols-4 gap-6 mb-12">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
@@ -149,7 +183,24 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Detailed Analysis */}
+      {/* Calibration Charts */}
+      <div className="grid lg:grid-cols-2 gap-8 mb-12">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Calibration Curve</h3>
+          <CalibrationCurveChart calibrationCurve={calibrationReport?.calibration?.curve} />
+        </div>
+        
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Predicted vs Actual Time</h3>
+          <PredictionAccuracyChart predictions={completedPredictions.length > 0 ? completedPredictions : generateSampleData()} />
+        </div>
+      </div>
+
+      {/* Additional Chart */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">Estimation Bias Over Time</h3>
+        <BiasOverTimeChart predictions={completedPredictions.length > 0 ? completedPredictions : generateSampleData()} />
+      </div>
       <div className="grid lg:grid-cols-2 gap-8 mb-12">
         {/* Calibration Curve */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">

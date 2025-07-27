@@ -44,22 +44,45 @@ export default function PredictPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    // Validate confidence intervals
+    const conf75Min = parseInt(formData.confidence75Min);
+    const conf75Max = parseInt(formData.confidence75Max);
+    const conf95Min = parseInt(formData.confidence95Min);
+    const conf95Max = parseInt(formData.confidence95Max);
+    
+    // Basic validation
+    if (conf75Min >= conf75Max) {
+      alert('75% confidence minimum must be less than maximum');
+      return;
+    }
+    
+    if (conf95Min >= conf95Max) {
+      alert('95% confidence minimum must be less than maximum');
+      return;
+    }
+    
+    if (conf95Min > conf75Min || conf95Max < conf75Max) {
+      alert('95% confidence interval should contain the 75% interval');
+      return;
+    }
+    
     // Convert string inputs to numbers
     const predictionData = {
       taskName: formData.taskName,
       isProject: formData.isProject,
       successCriteria: formData.successCriteria,
-      confidence75Min: parseInt(formData.confidence75Min),
-      confidence75Max: parseInt(formData.confidence75Max),
-      confidence95Min: parseInt(formData.confidence95Min),
-      confidence95Max: parseInt(formData.confidence95Max),
+      confidence75Min: conf75Min,
+      confidence75Max: conf75Max,
+      confidence95Min: conf95Min,
+      confidence95Max: conf95Max,
       confidenceLevel: formData.confidenceLevel,
       intensity: formData.intensity,
       tags: formData.tags,
     };
 
     // Save to storage
-    storageService.savePrediction(predictionData);
+    const savedPrediction = storageService.savePrediction(predictionData);
+    console.log('Saved prediction:', savedPrediction);
     
     // Redirect to log page
     router.push('/log');

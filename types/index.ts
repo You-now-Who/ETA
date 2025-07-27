@@ -15,6 +15,7 @@ export interface Prediction {
   actualTime?: number;
   reflection?: string;
   isCompleted: boolean;
+  completed?: boolean; // For compatibility with calibration analysis
 }
 
 export interface PredictionFormData {

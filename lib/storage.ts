@@ -42,9 +42,11 @@ export const storageService = {
     if (index !== -1) {
       predictions[index] = {
         ...predictions[index],
-        ...completionData,
+        actualTime: completionData.actualTime,
+        reflection: completionData.reflection,
         completedAt: new Date(),
         isCompleted: true,
+        completed: true, // Add this for compatibility with calibration analysis
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(predictions));
     }
